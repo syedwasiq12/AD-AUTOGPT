@@ -149,13 +149,38 @@ def main_ad_autogpt(main_prompt):
             if "Retrieve" in instruction:
                 output = retrieve_alzheimers_data()
             elif "Summarize" in instruction:
-                output = summarize_content(output)  # Pass previous data to be summarized
+            # Ensure data retrieval has happened
+                if 'retrieved_data' not in results:
+                    results['retrieved_data'] = retrieve_alzheimers_data()
+                    logging.info("Data retrieved for summarization.")
+                results['summary'] = summarize_content(results['retrieved_data'])
+
             elif "Extract Locations" in instruction:
-                output = extract_locations(output)  # Pass summarized content to extract locations
+            # Ensure summarization has happened
+                if 'summary' not in results:
+                    if 'retrieved_data' not in results:
+                        results['retrieved_data'] = retrieve_alzheimers_data()
+                    results['summary'] = summarize_content(results['retrieved_data'])
+                    logging.info("Summary generated for location extraction.")
+                results['locations'] = extract_locations(results['summary'])
+
             elif "Topic Modeling" in instruction:
-                output = perform_topic_modeling([output])  # Pass summary list for topic modeling
+                # Check if data retrieval has occurred
+                if 'retrieved_data' not in results:
+                    results['retrieved_data'] = retrieve_alzheimers_data()
+                    logging.info("Data retrieved for topic modeling.")
+                results['topics'] = perform_topic_modeling([results['retrieved_data']])
+    
             elif "Visualize" in instruction:
-                plot_locations(output)  # Pass location data to visualize
+                # Ensure locations are extracted
+                if 'locations' not in results:
+                    if 'summary' not in results:
+                        if 'retrieved_data' not in results:
+                            results['retrieved_data'] = retrieve_alzheimers_data()
+                        results['summary'] = summarize_content(results['retrieved_data'])
+                    results['locations'] = extract_locations(results['summary'])
+                    logging.info("Locations extracted for visualization.")
+                plot_locations(results['locations'])  # Pass location data to visualize
 
             # Validate output with Gemini
             valid_output = validate_output(instruction, output)
