@@ -37,11 +37,31 @@ def retrieve_alzheimers_data():
         news_items = soup.find_all('div', class_='views-row')
         
         for item in news_items:
+            # Extract metadata: title, date, and link
             title = item.find('h3').get_text(strip=True)
             date_text = item.find('span', class_='date-display-single').get_text(strip=True)
             date_published = datetime.strptime(date_text, '%B %d, %Y')
             link = 'https://www.nia.nih.gov' + item.find('a')['href']
-            articles.append({'title': title, 'link': link, 'date': date_published})
+            
+            # Follow the link to get the actual article content
+            article_response = requests.get(link, headers=headers)
+            
+            if article_response.status_code == 200:
+                article_soup = BeautifulSoup(article_response.text, 'html.parser')
+                
+                # Find the div with class 'content content-inner content_full col-12-full'
+                content_div = article_soup.find('div', class_='content content-inner content_full col-12-full')
+                
+                # Check if the content div is found and extract its text content
+                article_text = content_div.get_text(strip=True) if content_div else "Content not found"
+                
+                # Append article metadata along with content
+                articles.append({
+                    'title': title,
+                    'link': link,
+                    'date': date_published,
+                    'content': article_text  # Full content of the article
+                })
     
     return articles
 
